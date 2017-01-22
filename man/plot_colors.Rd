@@ -18,3 +18,6 @@ ggplot of color swatches and optional name of color pallette
 This function creates colored swatches of a list
 of colors for easy visualization.
 }
+\examples{
+plot_colors(c("red","yellow","blue"),"primary colors")
+}
