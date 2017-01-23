@@ -10,7 +10,8 @@
 #' of colors generated when the ramp is created.
 #' 
 #' @param noblack Logical; Defines whether the color black is to be excluded from your color ramp. Default value is FALSE. 
-#'
+#' @export 
+#' 
 #' @return A list of color values.
 #' 
 #' @examples wpal("cool_toned")
