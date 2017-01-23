@@ -39,7 +39,7 @@ histogram_colorstats<-function(datavector,
         scale_fill_gradientn(colours=rev(color_ramp), limits=c(minimum, maximum), values=color_value_breaks)+
         theme_tufte()+
         guides(fill=guide_colourbar(title=" ", barheight=0, barwidth=0, label=FALSE, ticks=FALSE))+
-        labs(title="Distribution",x= "",y="")+
+        labs(title="",x= "",y="")+
         theme(axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks=element_blank())
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -133,7 +133,7 @@ histogram_colorstats<-function(datavector,
                               aes(xintercept=vals,
                                   linetype=Statistic,
                                   colour = Statistic),
-                              show.legend = TRUE)+cls+lines
+                              show.legend = TRUE)+cls+lines+theme(plot.title=element_text(hjust = 0.5))
     }# if dist_stats is not null
     return(hist)
 }

@@ -65,6 +65,12 @@
 #'    before plotting it out by year. If you subset your data in a loop, you
 #'    could use this string to specify something along the lines of
 #'    paste0("age_ ",a," _ sex _",s).
+#' @param fontfamily The name of the font family you want to use for the text
+#'     on the plot. Default is 'serif'.
+#' @param fontsize The base/minimum size of the text on your graphic. 
+#'       Default is NULL. 
+#' @param title_justification Where ("left","center",or "right) you want the title 
+#'        and subtitle. Default is "center".
 #' @param title_font_size How large you want the title font to be. No default;
 #'    default values based on ggthemes tufte()'s default.
 #' @param title_font_face Special properties of the title font.
@@ -117,7 +123,7 @@ wmap<-function(chloropleth_map,
                # Optional data/geometry
                outline_map=NULL, # 
                data=NULL,
-               
+
                # lines around the chloropleth map layer
                chlor_lcol=NA,
                chlor_lsize=0.0,
@@ -141,10 +147,15 @@ wmap<-function(chloropleth_map,
                
                # Inputs for text
                map_title=" ",
+               map_subtitle=NULL,
+               title_justification="center",
                additional_variable_name_string=NULL,
                title_font_size=NULL,
                title_font_face="plain",
                
+               # Fonts
+               fontfamily="serif",
+               fontsize=12,
                # Inputs for generating series-maps
                series_dimension=NULL,
                series_sequence=NULL,
@@ -201,6 +212,7 @@ wmap<-function(chloropleth_map,
     print("Character data being converted to a factor. If you'd like a specific order to your levels, please transform your variable into a factor or ordered data type with appropriate ordering. ")
     data[,variable:=as.factor(variable)]
     discrete_scale<-TRUE}
+  if(discrete_scale&histogram){histogram<-F; print("Sorry, histogram/bar graph functionality is not yet supported in this version of the mapping suite for categorical data. No histogram will be printed.")}
   
   # Making sure that there are the right number of colors in the color ramp, by sampling and then scrambling (optional)
   # the color pallette chosen. 
@@ -230,6 +242,11 @@ wmap<-function(chloropleth_map,
     map_dims<-series_sequence
   }
   
+  # determining the "hjust" of the title
+  if(title_justification=="left"){title_justification<-0}
+  if(title_justification=="center"){title_justification<-.5}
+  if(title_justification=="right"){title_justification<-1}
+  
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Fortifying the Map(s) and Joining on the Data
   
@@ -255,12 +272,16 @@ wmap<-function(chloropleth_map,
   for (select_dimension in map_dims){ #for each dimension you want to plot...
     
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    # Determining map title, and subsetting the data
-    if (select_dimension=="*&^! no dimensions"){
-      main_map_title<-map_title
-    }else{
-      main_map_title<-paste0(map_title,": ",select_dimension)}
+    # Determining map title
+    main_map_title<-map_title
     if(verbose) print(main_map_title)
+    
+    # Determining map subtitle
+    if (select_dimension=="*&^! no dimensions"){
+      main_map_subtitle<-map_subtitle
+    }else{
+      main_map_subtitle<-paste0(map_subtitle," ",select_dimension)}
+    if(verbose) print(main_map_subtitle)
     
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # Subsetting the Data
@@ -311,8 +332,9 @@ wmap<-function(chloropleth_map,
         scale_x_continuous("", breaks=NULL) + 
         scale_y_continuous("", breaks=NULL) + 
         coord_fixed(ratio=1)+
-        labs(title = main_map_title) +
-        theme_tufte()
+        labs(title = main_map_title, subtitle=main_map_subtitle) +
+        theme_tufte(base_size = fontsize, base_family = fontfamily)+
+        theme(plot.title=element_text(hjust = title_justification),plot.subtitle=element_text(hjust = title_justification))
       
       #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       # Adding the color ramp!
@@ -369,18 +391,19 @@ wmap<-function(chloropleth_map,
     #################################
     
     if (discrete_scale==T){
-      map_plot<-ggplot(subset) + 
+      map_plot<-ggplot(na.omit(subset)) + 
         geom_polygon(aes(x=long, y=lat, group=group, fill=variable), color=chlor_lcol, size=chlor_lsize) +
         scale_x_continuous("", breaks=NULL) + 
         scale_y_continuous("", breaks=NULL) + 
         coord_fixed(ratio=1)+
-        labs(title = main_map_title) +
-        theme_tufte()
+        labs(title = main_map_title, subtitle=main_map_subtitle) +
+        theme_tufte(base_size = fontsize, base_family = fontfamily)+
+        theme(plot.title=element_text(hjust = title_justification),plot.subtitle=element_text(hjust = title_justification))
       
       #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       # Adding the color ramp!
       
-      map_plot<-map_plot+scale_fill_manual(values=color_list,drop = FALSE)
+      map_plot<-map_plot+scale_fill_manual(values=rev(color_list),drop = FALSE)
       
       #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       # Adding a legend
@@ -395,16 +418,16 @@ wmap<-function(chloropleth_map,
       }
       
       
-      # Adding a "histogram" (really, in this case, a bar chart) to the bottom of the image
+      # Adding a "histogram" (really, in this case, a bar chart) to the bottom of the image: This is in BETA and is not currently a funcitonality in v 1.1. 
       #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       if (histogram==TRUE){ # If you have specified that you do want the histogram at the bottom:          
         #histo<-qplot(variable, data=subset, geom="bar", fill=variable)+scale_fill_manual(values=color_list)
         histo<-ggplot(na.omit(subset), aes(x=variable, fill=variable)) +
           geom_bar() + 
           labs(x=NULL, y=NULL) +
-          scale_fill_manual(values=color_list)+theme_tufte()+theme(legend.position="none",
+          scale_fill_manual(values=rev(color_list))+theme_tufte(base_size = fontsize, base_family = fontfamily)+theme(legend.position="none",
                                                                    axis.ticks.x=element_blank(),
-                                                                   axis.ticks.y=element_blank())
+                                                                   axis.ticks.y=element_blank())+theme(plot.title=element_text(hjust = 0.5))
       }# If histogam==T
       
     } # if it's ordinal/categorical

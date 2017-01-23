@@ -11,8 +11,9 @@ wmap(chloropleth_map, geog_id, variable, outline_map = NULL, data = NULL,
   destination_folder = NULL, color_ramp = wpal("easter_to_earth"),
   outline_size = 0.1, outline_color = "white", override_scale = NULL,
   color_value_breaks = NULL, diverging_centerpoint = NULL,
-  map_title = " ", additional_variable_name_string = NULL,
-  title_font_size = NULL, title_font_face = "plain",
+  map_title = " ", map_subtitle = NULL, title_justification = "center",
+  additional_variable_name_string = NULL, title_font_size = NULL,
+  title_font_face = "plain", fontfamily = "serif", fontsize = 12,
   series_dimension = NULL, series_sequence = NULL, legend_name = NULL,
   legend_position = "bottom", legend_font_size = NULL,
   legend_font_face = "plain", legend_bar_width = 0.4,
@@ -98,6 +99,9 @@ dimensions are specified, the title will be as it is specified. If a
 dimension is specified, a phrase constructed using the series dimension
 and what you are mapping will be added to the plot title [ex="year:1990"].}
 
+\item{title_justification}{Where ("left","center",or "right) you want the title 
+and subtitle. Default is "center".}
+
 \item{additional_variable_name_string}{This is an additonal string that you
 want to add to the name of the PDF to describe any other breakdowns you
 might be using. For example, if you had to map something by year, age,
@@ -111,6 +115,12 @@ default values based on ggthemes tufte()'s default.}
 
 \item{title_font_face}{Special properties of the title font.
 Options include "plain", "bold", "italic". Default is plain.}
+
+\item{fontfamily}{The name of the font family you want to use for the text
+on the plot. Default is 'serif'.}
+
+\item{fontsize}{The base/minimum size of the text on your graphic. 
+Default is NULL.}
 
 \item{series_dimension}{A string-- the name of the column that will serve as
 the variable you loop through to create a series map. For example, year.}
