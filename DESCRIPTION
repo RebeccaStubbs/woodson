@@ -2,7 +2,7 @@ Package: woodson
 Type: Package
 Title: Woodson Mapping Suite
 Version: 0.1.1
-Author: Rebecca Stubbs <stubbsrw@gmail.com>, Neal Marquez <nmarquez@uw.edu>
+Author: main: Rebecca Stubbs <stubbsrw@gmail.com>, contributor: Neal Marquez <nmarquez@uw.edu>
 Maintainer: Rebecca Stubbs <stubbsrw@gmail.com>
 Description: Generates chloropleth maps out of SpatialPolygonsDataFrame objects. Easy to use plotting code with handy, built-in color schemes. Merges data onto SpatialPolygons objects using a unique ID and allows for generating maps based on a series or subset of the data (ex: time). Contains custom color ramps for use in cartography.
 Depends:
