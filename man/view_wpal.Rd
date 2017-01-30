@@ -18,5 +18,5 @@ This function shows a woodson pallette color scheme when the name is entered.
 }
 \examples{
 view_wpal()
-view_wpal("easter_to_earth")
 }
+

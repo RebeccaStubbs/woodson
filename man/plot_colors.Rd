@@ -21,3 +21,4 @@ of colors for easy visualization.
 \examples{
 plot_colors(c("red","yellow","blue"),"primary colors")
 }
+

@@ -31,3 +31,4 @@ properties of the distribution (mean, median, etc) added on top of the graph.
 \examples{
 intensity_pallette(start=0.5,r=.5,gamma=1)
 }
+

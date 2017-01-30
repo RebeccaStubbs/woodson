@@ -181,3 +181,4 @@ Simplified plotting utilitity for spatial dataframes
 see https://rpubs.com/BeccaStubbs/introduction_to_woodson_mapping_suite
 
 }
+

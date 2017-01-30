@@ -25,3 +25,4 @@ data visualizations, especially where value differentiation over a wide range is
 \examples{
 wpal("cool_toned")
 }
+

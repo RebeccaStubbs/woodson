@@ -20,3 +20,4 @@ An R object of class viewport.
 A wrapper for the viewport function that overwrites the original
 parameters.
 }
+

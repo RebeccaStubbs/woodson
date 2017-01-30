@@ -37,3 +37,4 @@ properties of the distribution (mean, median, etc) added on top of the graph.
 \examples{
 histogram_colorstats(rnorm(100))
 }
+

@@ -1,10 +1,15 @@
 Package: woodson
 Type: Package
 Title: Woodson Mapping Suite
-Version: 0.1.1
-Author: main: Rebecca Stubbs <stubbsrw@gmail.com>, contributor: Neal Marquez <nmarquez@uw.edu>
+Version: 0.1.2
+Author: main: Rebecca Stubbs <stubbsrw@gmail.com>, contributor: Neal Marquez
+    <nmarquez@uw.edu>
 Maintainer: Rebecca Stubbs <stubbsrw@gmail.com>
-Description: Generates chloropleth maps out of SpatialPolygonsDataFrame objects. Easy to use plotting code with handy, built-in color schemes. Merges data onto SpatialPolygons objects using a unique ID and allows for generating maps based on a series or subset of the data (ex: time). Contains custom color ramps for use in cartography.
+Description: Generates chloropleth maps out of SpatialPolygonsDataFrame objects.
+    Easy to use plotting code with handy, built-in color schemes. Merges data onto
+    SpatialPolygons objects using a unique ID and allows for generating maps based
+    on a series or subset of the data (ex: time). Contains custom color ramps for
+    use in cartography.
 Depends:
     R (>= 3.2.2),
     data.table (>= 1.9.0),
@@ -14,9 +19,13 @@ Depends:
     maptools,
     rje,
     extrafont,
-    classInt
+    classInt,
+    maptools,
+    rgdal,
+    rgeos,
+    sp
 Imports:
 License: GPL (>= 2)
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 5.0.1.9000
+RoxygenNote: 5.0.1
