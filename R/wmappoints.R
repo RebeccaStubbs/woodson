@@ -1,18 +1,26 @@
-#' Map Plotting Utility
+#' Map Plotting Utility for Gridded Data
 #'
-#' @description Simplified plotting utilitity for spatial dataframes
+#' @description Simplified plotting utilitity for evenly spaced points (raster data)
 #'
-#' @param chloropleth_map A SpatialPolygonsDataFrame with unique geographic ID.
+#' @param geometry A data table with an x and a y column, as well as a geographic id.
+#' @param xcol String; the name of the column that is the x values for the grid
+#' @param ycol String; the name of the column that is the y values for the grid
 #' @param geog_id string; the column name for the unique geogrpahic ID
 #' @param variable string; the column with values you wich to plot
+#' @param sizevar The variable you intend to use to scale the size ofthe points. 
 #' @param outline_map Another SpatialPolygons object that you want to use the
 #'     outlines from. Make sure your outline map and main map have the same projection.
 #' @param data A data.table that contains the data you want to map
 #'    (must contain geog_id, and the variable of interest, if specified.
 #'    If a series dimension and/or series sequence is defined,
 #'    those must also exist in this data set)
-#' @param chlor_lcol Color of outline of spatialPolygons layer of the main chloropleth SpatialPolygons input. Default is NA. 
-#' @param chlor_lsize Width of outline of spatialpolygons layer of the main chloropleth SpatialPolygons input. Default is 0.0. 
+#' @param transparency default=1, (totally opaque).
+#' @param sizerange default c(0,5), the range of sizes your points can be if you
+#'     use the sizevar argument.
+#' @param sizetitle Default "" no title. The legend title for your size legend.
+#' @param pointsize Default=1. If no size variable is defined, you can define
+#' a point size.
+#' @param pointsize default=16, a solid filled dot. Only use symbols that have fill.
 #' @param histogram logical; the plot will contain a histogram of the values
 #' @param hist_color If a character string for a color (or colors) are entered
 #'    (ex:"grey"), the histogram will be that color rather than the color ramp
@@ -42,6 +50,11 @@
 #'    geography to be (if provided). This can be any color r recognizes
 #'    suggestions might be "black","yellow", or "white". Default is white.
 #' @param override_scale Values that will be used to stretch the color ramp
+#'    instead of the min/max values present in the entire data set. Should
+#'    either be structured "c(min,max)", with numeric values, or be
+#'    "each_dimension", which will create a map series where each individual map
+#'    in a series will based on the min/max from that subset of data.
+#' @param override_size_scale Values that will be used to stretch the size ramp
 #'    instead of the min/max values present in the entire data set. Should
 #'    either be structured "c(min,max)", with numeric values, or be
 #'    "each_dimension", which will create a map series where each individual map
@@ -116,97 +129,155 @@
 #' 
 #' @export
 
-wmap<-function(chloropleth_map,
-               geog_id,
-               variable,
-               
-               # Optional data/geometry
-               outline_map=NULL, # 
-               data=NULL,
+wmappoints<-function(geometry,
+                     xcol,
+                     ycol,
+                     geog_id,
+                     variable,
+                   
+                   # Optional data/geometry
+                   outline_map=NULL, # 
+                   data=NULL,
+                   sizevar=NULL,
+                   
+                   # Point-based options
+                   transparency=1,
+                   sizerange=c(0,5),
+                   sizetitle="",
+                   pointsize=1,
+                   pointsymbol=16, # a solid filled dot
+                     
+                   # What elements of the map do you want the function to return?
+                   histogram=FALSE,
+                   hist_color=NULL,
+                   dist_stats=NULL,
+                   mean_color="red",
+                   quantile_color="black",
+                   return_map_object_only=FALSE,
+                   destination_folder=NULL,
+                   
+                   # Inputs for the color scheme of the maps
+                   color_ramp=wpal("easter_to_earth"),
+                   outline_size=.1,
+                   outline_color="white",
+                   override_scale=NULL,
+                   override_size_scale=NULL,
+                   color_value_breaks=NULL,
+                   diverging_centerpoint=NULL,
+                   
+                   # Inputs for text
+                   map_title=" ",
+                   map_subtitle=NULL,
+                   title_justification="center",
+                   additional_variable_name_string=NULL,
+                   title_font_size=NULL,
+                   title_font_face="plain",
+                   
+                   # Fonts
+                   fontfamily="serif",
+                   fontsize=12,
+                   # Inputs for generating series-maps
+                   series_dimension=NULL,
+                   series_sequence=NULL,
+                   
+                   # Inputs for map Legend
+                   legend_name=NULL,
+                   legend_position="bottom", 
+                   legend_font_size=NULL,
+                   legend_font_face="plain",
+                   
+                   # Inputs for numeric data only
+                   legend_bar_width=.4,
+                   legend_bar_length=20,
+                   legend_breaks=NULL,
+                   legend_labels=NULL,
+                   
+                   # Inputs for categorical data only
+                   scramble_colors=FALSE,
+                   label_position="right",
+                   
+                   # Do you want print statements?
+                   verbose=F){      
+  
 
-               # lines around the chloropleth map layer
-               chlor_lcol=NA,
-               chlor_lsize=0.0,
-               
-               # What elements of the map do you want the function to return?
-               histogram=FALSE,
-               hist_color=NULL,
-               dist_stats=NULL,
-               mean_color="red",
-               quantile_color="black",
-               return_map_object_only=FALSE,
-               destination_folder=NULL,
-               
-               # Inputs for the color scheme of the maps
-               color_ramp=wpal("easter_to_earth"),
-               outline_size=.1,
-               outline_color="white",
-               override_scale=NULL,
-               color_value_breaks=NULL,
-               diverging_centerpoint=NULL,
-               
-               # Inputs for text
-               map_title=" ",
-               map_subtitle=NULL,
-               title_justification="center",
-               additional_variable_name_string=NULL,
-               title_font_size=NULL,
-               title_font_face="plain",
-               
-               # Fonts
-               fontfamily="serif",
-               fontsize=12,
-               # Inputs for generating series-maps
-               series_dimension=NULL,
-               series_sequence=NULL,
-               
-               # Inputs for map Legend
-               legend_name=NULL,
-               legend_position="bottom", 
-               legend_font_size=NULL,
-               legend_font_face="plain",
-               
-               # Inputs for numeric data only
-               legend_bar_width=.4,
-               legend_bar_length=20,
-               legend_breaks=NULL,
-               legend_labels=NULL,
-               
-               # Inputs for categorical data only
-               scramble_colors=FALSE,
-               patch_width=.25,
-               patch_height=.25,
-               label_position="right",
-               
-               # Do you want print statements?
-               verbose=F){      
-  
-  
   # Copying objects such that the original data sets are unaltered
-  chloropleth_map<-copy(chloropleth_map)
+  data_is_null<-is.null(data)
+  geometry<-copy(geometry)
+  setnames(geometry,xcol,"lon"); setnames(geometry,ycol,"lat")
   outline_map<-copy(outline_map)
   data<-copy(data)
+  
+  if(variable==geog_id){stop("Your variable and geog_id are the same.")}
+  if(!is.null(sizevar)){
+    if(variable==sizevar){stop("Your variable and size-variable are the same.")}
+    if(geog_id==sizevar){stop("Your geog_id and size-variable are the same.")}
+    }
+  #print("aftererror")
   
   # Getting the data object ready to join to the fortified spatial object (either from the chloropleth map's data.table, or from an external data.table)
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Check to make sure the geog_id specified is within the chloropleth map's data table
-  if(!(geog_id %in% names(chloropleth_map@data))) stop("That geographic ID does not appear to exist within your chloropleth map object.")
-  setnames(chloropleth_map@data,geog_id,"geog_id")
+  if(!(geog_id %in% names(geometry))) stop("That geographic ID does not appear to exist within your chloropleth map object.")
+  setnames(geometry,geog_id,"geog_id")
+
   
-  # Rename variables within data set
-  if (!is.null(data)){ # if external data *IS* specified
+  # If External Data is Specified
+  #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  if (!is.null(data)){ 
+    
+    # Check that the geog_id is within the external data set, rename it to "geog_id"
     if(!(geog_id %in% names(data))) stop("That geographic ID does not appear to exist within your data set.")
-    if(!(variable %in% names(data) & !(variable %in% names(chloropleth_map@data)))) stop("That variable does not appear to exist either your geometry or your data set.")
-    if( (variable %in% names(data)) & (variable %in% names(chloropleth_map@data))) stop("The variable you defined for color exists in both your geometry and the additional data set.")
-        setnames(data,geog_id,"geog_id")
-  }else{ # If external data is NOT specified
-    data<-copy(chloropleth_map@data)
-    if(!(variable %in% names(data))){
-      stop("That variable does not appear to exist in the data attributes of your spatial object.")
-    }
-  }
-  setnames(data,variable,"variable")
+    setnames(data,geog_id,"geog_id")
+    
+    # Check thta the variable name exists in either the data set or the geometry
+    if( (!variable %in% names(data)) & (!variable %in% names(geometry)) ) stop(paste0("That variable, ",variable," does not appear to exist within your data set or geometry."))
+    
+    # Check that it doesn't exist in BOTh the data set and the geometry
+    if( (variable %in% names(data)) & (variable %in% names(geometry))) stop("The variable you defined for color exists in both your geometry and the additoinal data set.")
   
+    # Check that the variable name exists in either the data or the geometry
+    if ( (!variable %in% names(data)) & (!variable %in% names(geometry)) ) stop("The variable you defined as the size of the points does not appear to exist within your data set.")
+    
+    if (variable %in% names(geometry)) setnames(geometry,variable,"variable")
+    if (variable %in% names(data)) setnames(data,variable,"variable")
+    
+
+    # If a size variable is defined...
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      if(!is.null(sizevar)){
+        
+       
+        # Check that it doesn't exist in BOTH the data and the geometry        
+        if( (sizevar %in% names(data)) & (sizevar %in% names(geometry))) stop("The variable you defined for size exists in both your geometry and the additoinal data set.")
+        
+        # rename it in either the data or the geometry
+        if(sizevar %in% names(data)) {
+          if(!is.numeric(data[[sizevar]])) stop(paste0("You need to provide a numeric variable to the sizevar argument. You provided: ",sizevar))
+          setnames(data,sizevar,"sizevar")
+        }
+        if(sizevar %in% names(geometry)){
+          if(!is.numeric(geometry[[sizevar]])) stop(paste0("You need to provide a numeric variable to the sizevar argument. You provided: ",sizevar))
+          setnames(geometry,sizevar,"sizevar")
+        }
+      }
+    
+  }else{ # If external data is NOT specified
+    
+    if(!is.null(sizevar)){
+      if(!sizevar %in% names(geometry)) stop(paste0("You haven't provided an additional data set, and it looks like your size variable, ",sizevar," doesn't exist in your geometry object."))
+      if(!is.numeric(geometry[[sizevar]])) stop(paste0("You need to provide a numeric variable to the sizevar argument. You provided: ",sizevar))
+      setnames(geometry,sizevar,"sizevar")
+    }
+    
+    data<-copy(geometry)
+    if(!(variable %in% names(data))) stop(paste0("That variable, ",variable," does not appear to exist in the data attributes of your spatial object."))
+    setnames(data,variable,"variable")
+
+        }
+  
+  
+  
+
   # checking whether the data is a factor/ordered: this will make it be mapped with a discrete scale.
   if (is.factor(data[["variable"]])|is.ordered(data[["variable"]])){discrete_scale<-TRUE}else{discrete_scale<-FALSE}
   if (is.character(data[["variable"]])){
@@ -252,27 +323,27 @@ wmap<-function(chloropleth_map,
   # Fortifying the Map(s) and Joining on the Data
   
   # "fortifying" the Rdata shapefiles
-  chloropleth_map <-data.table(suppressWarnings(fortify(chloropleth_map, region="geog_id"))) ; setnames(chloropleth_map,"id","geog_id")
   if (!is.null(outline_map)){outline_map<-data.table(suppressWarnings(fortify(outline_map)))} # If an outline map is specified, fortify the outline map as well.
   
   # creating one long, huge object that you can subset by merging together the data and the forfified geometry
-  data<-data[, list(geog_id=as.character(geog_id), variable, series_dimension)] # Sub-setting the data such that only the variables that matter are kept
-  
-  orig_rows<-nrow(chloropleth_map)
-  chloropleth_map<-merge(data, chloropleth_map, by="geog_id", allow.cartesian=T)
-  after_rows<-nrow(chloropleth_map)
-  
-  if(orig_rows<after_rows&is.null(series_dimension))stop("You are trying to map more than one data observation per geometry, and you have not specified a series dimension to map over. Did you intend to subset your data further before passing it to this function?")
-  
+  if(data_is_null==F){ # if there is extra data provided, merge it on, then sub-select down.
+    orig_rows<-nrow(geometry)
+    data<-merge(data, geometry, by="geog_id", allow.cartesian=T)
+    after_rows<-nrow(data)
+    if(orig_rows<after_rows&is.null(series_dimension))print("You are mapping more than one data observation per geometry, and you have not specified a series dimension to map over. Did you intend to subset your data further before passing it to this funciton?")
+  }
+  if(!is.null(sizevar)){
+    data<-data[, list(geog_id=as.character(geog_id), variable, lon, lat, series_dimension, sizevar)]
+  }else{
+    data<-data[, list(geog_id=as.character(geog_id), variable, lon, lat, series_dimension)]
+  }
   
   ###########################################
   ## LOOPING ACROSS DIMENSIONS
   ########################################### 
   # Starting a PDF, if desired
   if (!is.null(destination_folder)){pdf(paste0(destination_folder,variable,additional_variable_name_string,".pdf"))}
-  # Creating a list in which to store the map and histogram
-  map_and_histogram_objects<-list()
-  
+
   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Starting the Loop
   for (select_dimension in map_dims){ #for each dimension you want to plot...
@@ -291,7 +362,7 @@ wmap<-function(chloropleth_map,
     
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # Subsetting the Data
-    subset<-copy(chloropleth_map[series_dimension==select_dimension]) # Sub-setting the fortified object to map out 1 layer/dimension (ex: year) of the variable of interest  
+    subset<-copy(data[series_dimension==select_dimension]) # Sub-setting the fortified object to map out 1 layer/dimension (ex: year) of the variable of interest  
     
     
     #####################
@@ -314,9 +385,28 @@ wmap<-function(chloropleth_map,
           }else{stop("Any character input other than 'each_dimension', which will produce a color ramp from the min/max of each dimension, is not recognized.")}
         }
       }else{ #Otherwise, set the min/max of the scale to the min/max of ALL dimensions of the variable.
-        maximum<-max(chloropleth_map[["variable"]])
-        minimum<-min(chloropleth_map[["variable"]])
+        maximum<-max(data[["variable"]])
+        minimum<-min(data[["variable"]])
       }
+      
+      
+      if(!is.null(sizevar)){
+        if (!is.null(override_size_scale)){
+          if(is.numeric(override_size_scale)){
+            sizeminimum<-override_size_scale[1]
+            sizemaximum<-override_size_scale[2]
+          }else{
+            if(override_size_scale=="each_dimension"){
+              sizemaximum<-max(subset[["sizevar"]])
+              sizeminimum<-min(subset[["sizevar"]])
+            }else{stop("Any character input other than 'each_dimension', which will produce a color ramp from the min/max of each dimension, is not recognized.")}
+          }
+        }else{ #Otherwise, set the min/max of the scale to the min/max of ALL dimensions of the variable.
+          sizemaximum<-max(data[["sizevar"]])
+          sizeminimum<-min(data[["sizevar"]])
+        }
+      }
+      
       
       # Determining the diverging centerpoint in relation to the min/max, if desired
       if(!is.null(diverging_centerpoint)){
@@ -333,8 +423,17 @@ wmap<-function(chloropleth_map,
       #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       # Creating the Map Plot in GGPlot2
       
-      map_plot<-ggplot(subset) + 
-        geom_polygon(aes(x=long, y=lat, group=group, fill=variable), color=chlor_lcol, size=chlor_lsize) +
+      if(!is.null(sizevar)){
+      map_plot<-ggplot() + geom_point(data=subset,aes(x=lon, y=lat, color=variable,size=sizevar),alpha=transparency)+
+        scale_size_continuous(name=sizetitle,range = sizerange, limits=c(sizeminimum,sizemaximum))
+      }
+
+      
+      if(is.null(sizevar)){
+        map_plot<-ggplot() + geom_point(data=subset,aes(x=lon, y=lat, color=variable),size=pointsize)
+      }
+
+      map_plot<-map_plot+
         scale_x_continuous("", breaks=NULL) + 
         scale_y_continuous("", breaks=NULL) + 
         coord_fixed(ratio=1)+
@@ -346,31 +445,47 @@ wmap<-function(chloropleth_map,
       # Adding the color ramp!
       
       if(!is.null(legend_breaks)&!is.null(legend_labels)){
-        map_plot<-map_plot+scale_fill_gradientn(colours=rev(color_ramp), 
+        map_plot<-map_plot+scale_color_gradientn(colours=rev(color_ramp), 
                                                 limits=c(minimum, maximum),
                                                 values=color_value_breaks, 
                                                 breaks=legend_breaks, 
-                                                labels=legend_labels)
+                                                labels=legend_labels,
+                                                scale_name="")
       }else{
-        map_plot<-map_plot+scale_fill_gradientn(colours=rev(color_ramp), 
+        map_plot<-map_plot+scale_color_gradientn(colours=rev(color_ramp), 
                                                 limits=c(minimum, maximum), 
                                                 values=color_value_breaks) 
       } # Why have this if-clause? If the value of legend_breaks is NULL, then you end up not getting a legend at all. Lame!
       
       #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       # Adding a legend
-      if (legend_position %in% c("bottom","top")){
-        map_plot<-map_plot+
-          guides(fill=guide_colourbar(title=legend_name, title.position="top", barheight=legend_bar_width, barwidth=legend_bar_length, label=TRUE, ticks=FALSE )) + 
-          theme(legend.position=legend_position,legend.title=element_text(size=legend_font_size))} 
-      if (legend_position %in% c("right","left")){
-        map_plot<-map_plot+
-          guides(fill=guide_colourbar(title=legend_name, title.position="top", barheight=legend_bar_length, barwidth=legend_bar_width, label=TRUE, ticks=FALSE )) +
-          theme(legend.position=legend_position,legend.title=element_text(size=legend_font_size))} 
-      if (legend_position %in% c("none")){
-        map_plot<-map_plot+theme(legend.position="none")
+      if(is.null(sizevar)){
+        if (legend_position %in% c("bottom","top")){
+          map_plot<-map_plot+
+            guides(color=guide_colourbar(title=legend_name, title.position="top", barheight=legend_bar_width, barwidth=legend_bar_length, label=TRUE, ticks=FALSE )) + 
+            theme(legend.position=legend_position,legend.title=element_text(size=legend_font_size))} 
+        if (legend_position %in% c("right","left")){
+          map_plot<-map_plot+
+            guides(color=guide_colourbar(title=legend_name, title.position="top", barheight=legend_bar_length, barwidth=legend_bar_width, label=TRUE, ticks=FALSE )) +
+            theme(legend.position=legend_position,legend.title=element_text(size=legend_font_size))} 
+        if (legend_position %in% c("none")){
+          map_plot<-map_plot+theme(legend.position="none")
+          }
+      }else{
+        if (legend_position %in% c("bottom","top")){
+          map_plot<-map_plot+
+            guides(color=guide_colourbar(title=legend_name, title.position="top", barheight=legend_bar_width, barwidth=legend_bar_length, label=TRUE, ticks=FALSE ),
+                   size=guide_legend(title=sizetitle,title.position="top")) + 
+            theme(legend.position=legend_position,legend.title=element_text(size=legend_font_size))} 
+        if (legend_position %in% c("right","left")){
+          map_plot<-map_plot+
+            guides(color=guide_colourbar(title=legend_name, title.position="top", barheight=legend_bar_length, barwidth=legend_bar_width, label=TRUE, ticks=FALSE ),
+                   size=guide_legend(title=sizetitle,title.position="top")) +
+            theme(legend.position=legend_position,legend.title=element_text(size=legend_font_size))} 
+        if (legend_position %in% c("none")){
+          map_plot<-map_plot+theme(legend.position="none")
+        }
       }
-      
       
       #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       # Making a histogram of the distribution of that dimension's values
@@ -397,8 +512,18 @@ wmap<-function(chloropleth_map,
     #################################
     
     if (discrete_scale==T){
-      map_plot<-ggplot(na.omit(subset)) + 
-        geom_polygon(aes(x=long, y=lat, group=group, fill=variable), color=chlor_lcol, size=chlor_lsize) +
+      
+      if(!is.null(sizevar)){
+        map_plot<-ggplot() + geom_point(data=na.omit(subset),aes(x=lon, y=lat, color=variable,size=sizevar),alpha=transparency)+
+          scale_size_continuous(name=sizetitle,range = sizerange)
+      }
+      
+      if(is.null(sizevar)){
+        map_plot<-ggplot() + geom_point(data=na.omit(subset),aes(x=lon, y=lat, color=variable),size=pointsize)
+      }
+      
+      
+      map_plot<-map_plot+
         scale_x_continuous("", breaks=NULL) + 
         scale_y_continuous("", breaks=NULL) + 
         coord_fixed(ratio=1)+
@@ -432,8 +557,8 @@ wmap<-function(chloropleth_map,
           geom_bar() + 
           labs(x=NULL, y=NULL) +
           scale_fill_manual(values=rev(color_list))+theme_tufte(base_size = fontsize, base_family = fontfamily)+theme(legend.position="none",
-                                                                   axis.ticks.x=element_blank(),
-                                                                   axis.ticks.y=element_blank())+theme(plot.title=element_text(hjust = 0.5))
+                                                                                                                      axis.ticks.x=element_blank(),
+                                                                                                                      axis.ticks.y=element_blank())+theme(plot.title=element_text(hjust = 0.5))
       }# If histogam==T
       
     } # if it's ordinal/categorical

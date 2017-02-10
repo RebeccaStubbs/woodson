@@ -116,7 +116,7 @@
 #' 
 #' @export
 
-wmap<-function(chloropleth_map,
+wmaplay<-function(chloropleth_map,
                geog_id,
                variable,
                
@@ -196,9 +196,8 @@ wmap<-function(chloropleth_map,
   # Rename variables within data set
   if (!is.null(data)){ # if external data *IS* specified
     if(!(geog_id %in% names(data))) stop("That geographic ID does not appear to exist within your data set.")
-    if(!(variable %in% names(data) & !(variable %in% names(chloropleth_map@data)))) stop("That variable does not appear to exist either your geometry or your data set.")
-    if( (variable %in% names(data)) & (variable %in% names(chloropleth_map@data))) stop("The variable you defined for color exists in both your geometry and the additional data set.")
-        setnames(data,geog_id,"geog_id")
+    if(!(variable %in% names(data))) stop("That variable does not appear to exist within your data set.")
+    setnames(data,geog_id,"geog_id")
   }else{ # If external data is NOT specified
     data<-copy(chloropleth_map@data)
     if(!(variable %in% names(data))){
@@ -257,12 +256,7 @@ wmap<-function(chloropleth_map,
   
   # creating one long, huge object that you can subset by merging together the data and the forfified geometry
   data<-data[, list(geog_id=as.character(geog_id), variable, series_dimension)] # Sub-setting the data such that only the variables that matter are kept
-  
-  orig_rows<-nrow(chloropleth_map)
   chloropleth_map<-merge(data, chloropleth_map, by="geog_id", allow.cartesian=T)
-  after_rows<-nrow(chloropleth_map)
-  
-  if(orig_rows<after_rows&is.null(series_dimension))stop("You are trying to map more than one data observation per geometry, and you have not specified a series dimension to map over. Did you intend to subset your data further before passing it to this function?")
   
   
   ###########################################
@@ -332,43 +326,40 @@ wmap<-function(chloropleth_map,
       
       #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       # Creating the Map Plot in GGPlot2
-      
-      map_plot<-ggplot(subset) + 
-        geom_polygon(aes(x=long, y=lat, group=group, fill=variable), color=chlor_lcol, size=chlor_lsize) +
-        scale_x_continuous("", breaks=NULL) + 
-        scale_y_continuous("", breaks=NULL) + 
-        coord_fixed(ratio=1)+
-        labs(title = main_map_title, subtitle=main_map_subtitle) +
-        theme_tufte(base_size = fontsize, base_family = fontfamily)+
-        theme(plot.title=element_text(hjust = title_justification),plot.subtitle=element_text(hjust = title_justification))
-      
+      plot_elements<-list()
+        plot_elements[["polys"]]<-layer(geom="polygon",stat="identity",position = "identity",data=subset,mapping=aes(x=long, y=lat, group=group, fill=variable), params=list(color=chlor_lcol, size=chlor_lsize))
+        plot_elements[["scale_x"]]<-scale_x_continuous("", breaks=NULL)
+        plot_elements[["scale_y"]]<-scale_y_continuous("", breaks=NULL)
+        plot_elements[["coord-fixed"]]<-coord_fixed(ratio=1)
+        plot_elements[["labels"]]<-labs(title = main_map_title, subtitle=main_map_subtitle)
+        plot_elements[["theme"]]<-theme_tufte(base_size = fontsize, base_family = fontfamily)
+        plot_elements[["more_theme"]]<-theme(plot.title=element_text(hjust = title_justification),plot.subtitle=element_text(hjust = title_justification))
+        
       #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       # Adding the color ramp!
       
       if(!is.null(legend_breaks)&!is.null(legend_labels)){
-        map_plot<-map_plot+scale_fill_gradientn(colours=rev(color_ramp), 
+        plot_elements[["polyfill"]]<-scale_fill_gradientn(scale_name=paste0("legend for ", variable),colours=rev(color_ramp), 
                                                 limits=c(minimum, maximum),
                                                 values=color_value_breaks, 
                                                 breaks=legend_breaks, 
                                                 labels=legend_labels)
       }else{
-        map_plot<-map_plot+scale_fill_gradientn(colours=rev(color_ramp), 
+        plot_elements[["polyfill"]]<-scale_fill_gradientn(colours=rev(color_ramp), 
                                                 limits=c(minimum, maximum), 
-                                                values=color_value_breaks) 
+                                                values=color_value_breaks)
       } # Why have this if-clause? If the value of legend_breaks is NULL, then you end up not getting a legend at all. Lame!
       
       #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       # Adding a legend
       if (legend_position %in% c("bottom","top")){
-        map_plot<-map_plot+
-          guides(fill=guide_colourbar(title=legend_name, title.position="top", barheight=legend_bar_width, barwidth=legend_bar_length, label=TRUE, ticks=FALSE )) + 
-          theme(legend.position=legend_position,legend.title=element_text(size=legend_font_size))} 
+          plot_elements[["legend"]]<-guides(fill=guide_colourbar(title=legend_name, title.position="top", barheight=legend_bar_width, barwidth=legend_bar_length, label=TRUE, ticks=FALSE ))
+          plot_elements[["legend_theme"]]<-theme(legend.position=legend_position,legend.title=element_text(size=legend_font_size))} 
       if (legend_position %in% c("right","left")){
-        map_plot<-map_plot+
-          guides(fill=guide_colourbar(title=legend_name, title.position="top", barheight=legend_bar_length, barwidth=legend_bar_width, label=TRUE, ticks=FALSE )) +
-          theme(legend.position=legend_position,legend.title=element_text(size=legend_font_size))} 
+          plot_elements[["legend"]]<-guides(fill=guide_colourbar(title=legend_name, title.position="top", barheight=legend_bar_length, barwidth=legend_bar_width, label=TRUE, ticks=FALSE ))
+          plot_elements[["legend_theme"]]<-theme(legend.position=legend_position,legend.title=element_text(size=legend_font_size))} 
       if (legend_position %in% c("none")){
-        map_plot<-map_plot+theme(legend.position="none")
+          plot_elements[["legend"]]<-theme(legend.position="none")
       }
       
       
@@ -444,8 +435,8 @@ wmap<-function(chloropleth_map,
     
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # Adding Title and Legend Formatting
-    map_plot<-map_plot +  theme(plot.title = element_text(size = title_font_size,  face=title_font_face))+ #Adding custom title that might override the legend stuff
-      theme(legend.text = element_text(size = legend_font_size, face=legend_font_face))
+    plot_elements[["title_font_face_size"]]<-theme(plot.title = element_text(size = title_font_size,  face=title_font_face)) #Adding custom title that might override the legend stuff
+    plot_elements[["legend_font_face_size"]]<-theme(legend.text = element_text(size = legend_font_size, face=legend_font_face))
     
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # Adding Outline Map, if desired
@@ -456,7 +447,7 @@ wmap<-function(chloropleth_map,
     
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ## If you just want the map plot as an object you can pass to other things...
-    if (return_map_object_only==TRUE){return(map_plot)}else{
+    if (return_map_object_only==TRUE){return(plot_elements)}else{
       
       #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       # Printing the Plot:
